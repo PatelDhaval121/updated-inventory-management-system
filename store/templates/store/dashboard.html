@@ -3,8 +3,15 @@
 {% block title %}Dashboard{% endblock title %}
 
 {% block content %}
+<!-- Dark/Light Mode Toggle Button -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+    <button id="themeToggle" class="btn btn-outline-secondary btn-sm" title="Toggle Dark/Light Mode">
+        <i id="themeIcon" class="fas fa-moon"></i>
+    </button>
+</div>
+
 <!-- Dashboard -->
-<div class="d-flex flex-column flex-lg-row h-lg-full bg-surface-secondary">
+<div class="d-flex flex-column flex-lg-row h-lg-full bg-surface-secondary" id="dashboardContainer">
     {% load static %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
     <!-- Main content -->
@@ -17,6 +24,93 @@
                     <style>
                         a {
                             text-decoration: none;
+                        }
+                        
+                        /* Custom Color Palette CSS Variables */
+                        :root {
+                            /* Light Mode - Gray Colors */
+                            --bg-primary: #F8FAFC;
+                            --bg-secondary: #E2E8F0;
+                            --bg-tertiary: #CBD5E1;
+                            --bg-quaternary: #9AA6B2;
+                            --text-primary: #000000;
+                            --text-secondary: #000000;
+                            --text-muted: #000000;
+                            --card-bg: #F8FAFC;
+                            --card-border: #CBD5E1;
+                            --shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+                        }
+                        
+                        [data-theme="dark"] {
+                            /* Dark Mode - Dark Colors */
+                            --bg-primary: #1A202C;
+                            --bg-secondary: #2D3748;
+                            --bg-tertiary: #4A5568;
+                            --bg-quaternary: #718096;
+                            --text-primary: #FFFFFF;
+                            --text-secondary: #E2E8F0;
+                            --text-muted: #A0AEC0;
+                            --card-bg: #2D3748;
+                            --card-border: #4A5568;
+                            --shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
+                        }
+                        
+                        /* Apply custom colors to dashboard */
+                        #dashboardContainer {
+                            background-color: var(--bg-secondary) !important;
+                            transition: background-color 0.3s ease;
+                        }
+                        
+                        #dashboardContainer .card {
+                            background-color: var(--card-bg) !important;
+                            border-color: var(--card-border) !important;
+                            color: var(--text-primary) !important;
+                            box-shadow: var(--shadow) !important;
+                            transition: all 0.3s ease;
+                        }
+                        
+                        #dashboardContainer .card:hover {
+                            background-color: var(--bg-tertiary) !important;
+                            transform: translateY(-2px);
+                            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                        }
+                        
+                        #dashboardContainer .text-muted {
+                            color: var(--text-muted) !important;
+                        }
+                        
+                        #dashboardContainer .text-secondary {
+                            color: var(--text-secondary) !important;
+                        }
+                        
+                        #dashboardContainer .h3,
+                        #dashboardContainer .h6 {
+                            color: var(--text-primary) !important;
+                        }
+                        
+                        /* Custom icon backgrounds */
+                        .icon-shape {
+                            background-color: var(--bg-quaternary) !important;
+                            color: var(--text-primary) !important;
+                        }
+                        
+                        /* Custom badge styling */
+                        .badge {
+                            background-color: var(--bg-tertiary) !important;
+                            color: var(--text-primary) !important;
+                        }
+                        
+                        /* Theme toggle button styling */
+                        #themeToggle {
+                            background-color: var(--card-bg);
+                            border-color: var(--card-border);
+                            color: var(--text-primary);
+                            transition: all 0.3s ease;
+                        }
+                        
+                        #themeToggle:hover {
+                            background-color: var(--bg-secondary);
+                            border-color: var(--text-secondary);
                         }
                     </style>
                     <div class="col-xl-3 col-sm-6 col-12" id="products">
@@ -125,4 +219,58 @@
         </main>
     </div>
 </div>
+
+<!-- Dark/Light Mode Toggle JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    
+    // Get saved theme or default to light
+    const savedTheme = localStorage.getItem('dashboard-theme') || 'light';
+    
+    // Apply saved theme
+    applyTheme(savedTheme);
+    
+    // Theme toggle event listener
+    themeToggle.addEventListener('click', function() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        applyTheme(newTheme);
+        localStorage.setItem('dashboard-theme', newTheme);
+    });
+    
+    function applyTheme(theme) {
+        // Set data attribute on document element
+        document.documentElement.setAttribute('data-theme', theme);
+        
+        // Update icon
+        if (theme === 'dark') {
+            themeIcon.className = 'fas fa-sun';
+            themeToggle.title = 'Switch to Light Mode';
+        } else {
+            themeIcon.className = 'fas fa-moon';
+            themeToggle.title = 'Switch to Dark Mode';
+        }
+        
+        // Update charts if they exist
+        updateChartsTheme(theme);
+    }
+    
+    function updateChartsTheme(theme) {
+        // Update Chart.js theme if charts are loaded
+        if (typeof Chart !== 'undefined') {
+            Chart.defaults.color = theme === 'dark' ? '#b3b3b3' : '#666';
+            Chart.defaults.scale.grid.color = theme === 'dark' ? '#404040' : '#e5e5e5';
+            
+            // Redraw existing charts
+            Chart.helpers.each(Chart.instances, function(chart) {
+                chart.update();
+            });
+        }
+    }
+});
+</script>
+
 {% endblock content %}

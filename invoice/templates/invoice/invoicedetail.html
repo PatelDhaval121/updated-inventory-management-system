@@ -19,9 +19,9 @@
   }
 </style>
 <div class="container text-center m-5">
-<a class="btn btn-success btn-sm"><i class="fa fa-print"></i> Print</a>
+<a class="btn btn-success btn-sm" id="print-invoice-btn"><i class="fa fa-print"></i> Print</a>
 </div>
-<div class="container invoice-receipt p-5">
+<div class="container invoice-receipt p-5" id="invoice-content">
   <!-- Header -->
   <table width="100%" cellpadding="0" cellspacing="0" align="center" class="fullTable" >
     <tr>
@@ -142,7 +142,7 @@
                         </td>
 
                         <td style="font-size: 12px;  color: #646a6e;  line-height: 18px;  vertical-align: top; padding:10px 0;" align="center">{{invoice.quantity}}</td>
-                        <td style="font-size: 12px;  color: #1e2b33;  line-height: 18px;  vertical-align: top; padding:10px 0;" align="right">Ksh {{invoice.price_per_item}}</td>
+                        <td style="font-size: 12px;  color: #1e2b33;  line-height: 18px;  vertical-align: top; padding:10px 0;" align="right">₹ {{invoice.price_per_item}}</td>
                       </tr>
                       <tr>
                         <td height="1" colspan="4" style="border-bottom:1px solid #e4e4e4"></td>
@@ -244,4 +244,14 @@
     </tr>
   </table>
 </div>
+<script>
+  document.getElementById('print-invoice-btn').addEventListener('click', function() {
+    var printContents = document.getElementById('invoice-content').innerHTML;
+    var originalContents = document.body.innerHTML;
+    document.body.innerHTML = printContents;
+    window.print();
+    document.body.innerHTML = originalContents;
+    window.location.reload(); // reload to restore event listeners and state
+  });
+</script>
 {% endblock %}

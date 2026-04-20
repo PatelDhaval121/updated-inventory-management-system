@@ -13,14 +13,16 @@ and querying functionalities.
 # Standard library imports
 import operator
 from functools import reduce
+import json
 
 # Django core imports
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.urls import reverse, reverse_lazy
+from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Q, Count, Sum
+from django.db.models import Q, Count, Sum, F, FloatField
 
 # Authentication and permissions
 from django.contrib.auth.decorators import login_required
@@ -39,7 +41,7 @@ from django_tables2.export.views import ExportMixin
 
 # Local app imports
 from accounts.models import Profile, Vendor
-from transactions.models import Sale
+from transactions.models import Sale, SaleDetail, Purchase
 from .models import Category, Item, Delivery
 from .forms import ItemForm, CategoryForm, DeliveryForm
 from .tables import ItemTable
@@ -65,6 +67,20 @@ def dashboard(request):
     categories = [cat["name"] for cat in category_counts]
     category_counts = [cat["item_count"] for cat in category_counts]
 
+    # Emoji mapping for categories
+    category_emoji_map = {
+        "Fruits": "🍇",
+        "Vegetables": "🥦",
+        "Dairy": "🥛",
+        "Bakery": "🍞",
+        "Meat": "🥩",
+        "Beverages": "🥤",
+        "Snacks": "🍪",
+        "Seafood": "🦐",
+        # Add more as needed
+    }
+    category_emojis = [category_emoji_map.get(cat, '') for cat in categories]
+
     sale_dates = (
         Sale.objects.values("date_added__date")
         .annotate(total_sales=Sum("grand_total"))
@@ -75,6 +91,91 @@ def dashboard(request):
     ]
     sale_dates_values = [float(date["total_sales"]) for date in sale_dates]
 
+    # Calculate Profit/Loss data (aggregate method: sales vs purchases)
+    from datetime import datetime, timedelta
+    from django.utils import timezone
+
+    # Get last 30 days for profit/loss calculation
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+
+    # Calculate total revenue from sales
+    total_revenue = Sale.objects.filter(
+        date_added__gte=thirty_days_ago
+    ).aggregate(total=Sum('grand_total'))['total'] or 0
+
+    # Calculate total cost from purchases
+    total_cost = Purchase.objects.filter(
+        order_date__gte=thirty_days_ago
+    ).aggregate(total=Sum('total_value'))['total'] or 0
+
+    # Calculate profit/loss
+    profit_loss = float(total_revenue) - float(total_cost)
+
+    # Get daily profit/loss data for chart
+    daily_profit_data = []
+    daily_labels = []
+
+    for i in range(30):
+        date = timezone.now() - timedelta(days=i)
+        start_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_of_day = date.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+        daily_revenue = Sale.objects.filter(
+            date_added__gte=start_of_day,
+            date_added__lte=end_of_day
+        ).aggregate(total=Sum('grand_total'))['total'] or 0
+
+        daily_cost = Purchase.objects.filter(
+            order_date__gte=start_of_day,
+            order_date__lte=end_of_day
+        ).aggregate(total=Sum('total_value'))['total'] or 0
+
+        daily_profit = float(daily_revenue) - float(daily_cost)
+        daily_profit_data.append(daily_profit)
+        daily_labels.append(date.strftime('%m/%d'))
+
+    # Reverse to show oldest to newest
+    daily_profit_data.reverse()
+    daily_labels.reverse()
+
+    # Build Category Sales Trend (Last 30 Days)
+    # Determine top categories by total sales in the period
+    from django.db.models import ExpressionWrapper
+    value_expr = ExpressionWrapper(F('price') * F('quantity'), output_field=FloatField())
+    top_categories_qs = (
+        SaleDetail.objects.filter(sale__date_added__gte=thirty_days_ago)
+        .values('item__category__name')
+        .annotate(total=Sum(value_expr))
+        .order_by('-total')
+    )
+    top_categories = [c['item__category__name'] for c in top_categories_qs[:5]]
+
+    category_trend_labels = []
+    category_trend_series = {cat: [] for cat in top_categories}
+
+    for i in range(30):
+        date = timezone.now() - timedelta(days=i)
+        start_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_of_day = date.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+        # Sales per category for the day
+        day_sales = (
+            SaleDetail.objects.filter(sale__date_added__gte=start_of_day, sale__date_added__lte=end_of_day)
+            .values('item__category__name')
+            .annotate(total=Sum(value_expr))
+        )
+        totals_by_cat = {row['item__category__name']: float(row['total'] or 0) for row in day_sales}
+
+        for cat in top_categories:
+            category_trend_series[cat].append(totals_by_cat.get(cat, 0.0))
+
+        category_trend_labels.append(date.strftime('%m/%d'))
+
+    # Reverse to show oldest to newest
+    category_trend_labels.reverse()
+    for cat in category_trend_series:
+        category_trend_series[cat].reverse()
+
     context = {
         "items": items,
         "profiles": profiles,
@@ -82,12 +183,20 @@ def dashboard(request):
         "items_count": items_count,
         "total_items": total_items,
         "vendors": Vendor.objects.all(),
-        "delivery": Delivery.objects.all(),
+        "delivery": Delivery.objects.filter(is_delivered=False),
         "sales": Sale.objects.all(),
-        "categories": categories,
-        "category_counts": category_counts,
+        "categories": json.dumps(categories),
+        "category_counts": json.dumps(category_counts),
+        "category_emojis": json.dumps(category_emojis),
         "sale_dates_labels": sale_dates_labels,
         "sale_dates_values": sale_dates_values,
+        # Profit/Loss values kept for compatibility but chart will be replaced
+        "total_revenue": total_revenue,
+        "total_cost": total_cost,
+        "profit_loss": profit_loss,
+        # New category trend data
+        "category_trend_labels": json.dumps(category_trend_labels),
+        "category_trend_series": json.dumps(category_trend_series),
     }
     return render(request, "store/dashboard.html", context)
 
@@ -373,6 +482,24 @@ class CategoryDeleteView(LoginRequiredMixin, DeleteView):
     context_object_name = 'category'
     success_url = reverse_lazy('category-list')
     login_url = 'login'
+
+
+@login_required
+def mark_delivery_completed(request, pk):
+    """
+    Mark a delivery as completed (is_delivered=True)
+    """
+    try:
+        delivery = Delivery.objects.get(pk=pk)
+        delivery.is_delivered = True
+        delivery.save()
+        messages.success(request, f'Delivery #{delivery.id} marked as completed!')
+    except Delivery.DoesNotExist:
+        messages.error(request, 'Delivery not found!')
+    except Exception as e:
+        messages.error(request, f'Error updating delivery: {str(e)}')
+    
+    return redirect('deliveries')
 
 
 def is_ajax(request):

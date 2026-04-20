@@ -15,6 +15,32 @@
 
 <!-- Page content  -->
 {% block content %}
+<style>
+    /* Hide DataTable length controls */
+    .dataTables_length,
+    .dataTables_filter,
+    .dataTables_info,
+    .dataTables_paginate {
+        display: none !important;
+    }
+    /* Hide any "Show entries" dropdown */
+    select[name="table_items_length"],
+    .dataTables_length select {
+        display: none !important;
+    }
+    
+    /* Search filter styling */
+    #itemSearchFilter {
+        border-radius: 0.375rem 0 0 0.375rem;
+    }
+    .input-group-text {
+        background-color: #f8f9fa;
+        border-color: #ced4da;
+    }
+    #clearSearch {
+        border-radius: 0.375rem;
+    }
+</style>
 <div class="container py-5">
     <!-- Go back -->
     <div class="mb-4">
@@ -45,6 +71,23 @@
                             <i class="fas fa-trash-alt me-2"></i> Delete All Items
                         </button>
 
+                        <!-- Search Filter -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="itemSearchFilter" placeholder="Search products in table...">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="clearSearch">
+                                    <i class="fas fa-times"></i> Clear Search
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Items Table -->
                         <div class="table-responsive my-3">
                             <table class="table table-bordered table-striped" id="table_items">
@@ -54,6 +97,7 @@
                                         <th>Name</th>
                                         <th>Price</th>
                                         <th>Quantity</th>
+                                        <th>Available</th>
                                         <th>Total</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
@@ -192,11 +236,14 @@
             tblItems = $("#table_items").DataTable({
                 destroy: true,
                 data: this.products.items,
+                lengthChange: false,
+                pageLength: -1,
                 columns: [
                     {"data": "number"},
                     {"data": "name"},
                     {"data": "price"},
                     {"data": "quantity"},
+                    {"data": "available_quantity"},
                     {"data": "total_item"},
                     {"data": "id"},
                 ],
@@ -210,11 +257,21 @@
                         },
                     },
                     {
+                        // Available quantity
+                        class: 'text-center',
+                        targets: [4],
+                        render: function (data, type, row) {
+                            var availableQty = row.available_quantity || 0;
+                            var badgeClass = availableQty > 0 ? 'bg-success' : 'bg-danger';
+                            return '<span class="badge ' + badgeClass + '">' + availableQty + '</span>';
+                        },
+                    },
+                    {
                         // Item price and total
                         class: 'text-right',
-                        targets: [2, 4],
+                        targets: [2, 5],
                         render: function (data, type, row) {
-                            return parseFloat(data).toFixed(2) + ' $';
+                            return '₹ ' + parseFloat(data).toFixed(2);
                         },
                     },
                     {
@@ -228,9 +285,10 @@
                     },
                 ],
                 rowCallback(row, data, displayNun, displayIndex, dataIndex) {
+                    var availableQty = data.available_quantity || 1;
                     $(row).find("input[name='quantity']").TouchSpin({
                         min: 1,
-                        max: 100, // Máximo de acuerdo al stock de cada itemo
+                        max: availableQty, // Maximum based on available stock
                         step: 1,
                         decimals: 0,
                         boostat: 1,
@@ -350,12 +408,32 @@
             // When an item changes its quantity
             var quantity = parseInt($(this).val());
             var tr = tblItems.cell($(this).closest('td, li')).index();
+            var item = sale.products.items[tr.row];
+            var availableQuantity = item.available_quantity || 0;
+            
+            // Validate quantity against available stock
+            if (quantity > availableQuantity) {
+                Swal.fire({
+                    title: 'Insufficient Stock!',
+                    text: `Only ${availableQuantity} units available for "${item.name}". You requested ${quantity} units.`,
+                    icon: 'warning',
+                    confirmButtonText: 'OK',
+                    customClass: {
+                        confirmButton: 'btn btn-warning'
+                    }
+                });
+                
+                // Reset quantity to available stock or 1 if no stock
+                quantity = availableQuantity > 0 ? availableQuantity : 1;
+                $(this).val(quantity);
+            }
+            
             // Update the item quantity in the sale object
             sale.products.items[tr.row].quantity = quantity;
             // Calculate the sale with the new quantity
             sale.calculate_sale();
             // Find the row to update the item total
-            $('td:eq(4)', tblItems.row(tr.row).node()).html(sale.products.items[tr.row].total_item + ' $');
+            $('td:eq(4)', tblItems.row(tr.row).node()).html('₹ ' + sale.products.items[tr.row].total_item);
         });
 
         // Delete all items
@@ -389,12 +467,26 @@
 
         // Items datatable
         tblItems = $('#table_items').DataTable({
+            lengthChange: false,
+            pageLength: -1,
             columnDefs: [
                 {
                     targets: [-1],
                     orderable: false,
                 }
             ],
+        });
+
+        // Search filter functionality
+        $('#itemSearchFilter').on('keyup', function() {
+            var searchValue = $(this).val();
+            tblItems.search(searchValue).draw();
+        });
+
+        // Clear search functionality
+        $('#clearSearch').on('click', function() {
+            $('#itemSearchFilter').val('');
+            tblItems.search('').draw();
         });
 
         // Item searchbox templateResult
