@@ -65,6 +65,12 @@
                         <a class="btn btn-outline-info btn-sm" href="{% url 'delivery-update' delivery.pk %}">
                             <i class="fa-solid fa-pen"></i> Edit
                         </a>
+                        {% if not delivery.is_delivered %}
+                        <a class="btn btn-outline-success btn-sm" href="{% url 'delivery-mark-delivered' delivery.pk %}" 
+                           onclick="return confirm('Mark this delivery as completed?')">
+                            <i class="fa-solid fa-check"></i> Mark Delivered
+                        </a>
+                        {% endif %}
                         <a class="btn btn-outline-danger btn-sm float-end" href="{% url 'delivery-delete' delivery.pk %}">
                             <i class="fa-solid fa-trash"></i> Delete
                         </a>

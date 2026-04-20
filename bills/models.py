@@ -44,7 +44,7 @@ class Bill(models.Model):
         help_text='Details of the payment'
     )
     amount = models.FloatField(
-        verbose_name='Total Amount Owing (Ksh)',
+        verbose_name='Total Amount Owing (₹)',
         help_text='Total amount due for payment'
     )
     status = models.BooleanField(

@@ -1,62 +1,163 @@
 {% extends 'store/base.html' %}
-{% block title %}Profile{% endblock %}
+{% block title %}Edit Profile{% endblock %}
 {% load crispy_forms_tags %}
 {% block content %}
-<div class="container my-4">
-        <div class="box-main row">
-          <div class="col-md-3 col-lg-3"></div>
-          <div class="col-md-6 col-lg-6">
-          <form method="POST" enctype="multipart/form-data">
-              {% csrf_token %}
-              <h1 id="header" class="text-success">Edit Your Profile
-              </h1>
-              <div class="float-label">
-                <label> username </label>
-                <span class="text-danger">{{ u_form.username.errors }}</span>
-                {{ u_form.username }}
-              </div>
-              <br>
-              <div class="float-label">
-                <label> email </label>
-                <span class="text-danger">{{ u_form.email.errors }}</span>
-                {{ u_form.email }}
-              </div>
-              <br>
-              <div class="float-label">
-                <label>secondary email </label>
-                <span class="text-danger">{{ p_form.email.errors }}</span>
-                {{ p_form.email }}
-              </div>
-              <br>
-              <div class="float-label">
-                <label> first name </label>
-                <span class="text-danger">{{ p_form.first_name.errors }}</span>
-                {{ p_form.first_name}}
-              </div>
-              <br>
-              <div class="float-label">
-                <label> last name </label>
-                <span class="text-danger">{{ p_form.last_name.errors }}</span>
-                {{ p_form.last_name}}
-              </div>
-              <br>
-              <div class="float-label">
-                <label> mobile number </label>
-                <span class="text-danger">{{ p_form.telephone.errors }}</span>
-                {{ p_form.telephone}}
-              </div>
-              <br>
-              <div class="float-label">
-                <label> lasttname </label>
-                {{ p_form.profile_picture}}
-              </div>
-              <br>
-              <button type="submit" class="btn btn-success">update</button>
-            </form>
-              </div>
+<style>
+  .profile-edit-card {
+    max-width: 700px;
+    border-radius: 1.5rem;
+    box-shadow: 0 8px 32px 0 rgba(31, 41, 55, 0.15);
+    background: var(--dk-gray-100, #f3f4f6);
+    overflow: hidden;
+  }
+  .profile-edit-left {
+    background: var(--sidebar-bg-color, #252636);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+  }
+  .profile-img-wrapper {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin-bottom: 1rem;
+  }
+  .profile-img-wrapper img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 4px solid var(--sidebar-separator-bg, #4caf50);
+    background: #fff;
+  }
+  .profile-img-upload {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: var(--sidebar-separator-bg, #4caf50);
+    color: #fff;
+    border-radius: 50%;
+    padding: 0.4rem 0.5rem;
+    cursor: pointer;
+    border: 2px solid #fff;
+    font-size: 1.1rem;
+    transition: background 0.2s;
+  }
+  .profile-img-upload:hover {
+    background: #388e3c;
+  }
+  .profile-basic-info {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  .profile-edit-right {
+    padding: 2rem 2rem 2rem 2rem;
+    background: transparent;
+  }
+  .form-floating > .form-control, .form-floating > .form-select {
+    min-height: 48px;
+    padding-top: 1.25rem;
+    padding-bottom: 0.25rem;
+  }
+  .form-floating > label {
+    left: 0.75rem;
+    padding: 0 0.25rem;
+    color: #6b7280;
+    font-size: 1rem;
+    background: transparent;
+  }
+  .form-floating {
+    margin-bottom: 1.2rem;
+  }
+  .profile-picture-upload-label {
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  @media (max-width: 767px) {
+    .profile-edit-card {
+      flex-direction: column !important;
+    }
+    .profile-edit-right {
+      padding: 1.5rem;
+    }
+    .profile-edit-left {
+      padding: 1.5rem 1rem;
+    }
+  }
+</style>
+<div class="container my-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+  <div class="profile-edit-card d-flex flex-row w-100">
+    <div class="profile-edit-left flex-shrink-0">
+      <div class="profile-img-wrapper">
+        {% if p_form.profile_picture.value %}
+          <img src="{{ p_form.profile_picture.value.url }}" alt="Profile Picture">
+        {% else %}
+          <img src="/static/images/profile_pics/default.png" alt="Profile Picture">
+        {% endif %}
+        <label for="id_profile_picture" class="profile-img-upload" title="Change profile picture">
+          <i class="fa fa-camera"></i>
+        </label>
+      </div>
+      <div class="profile-basic-info">
+        <h4 class="mb-1" style="font-weight: 600;">{{ u_form.username.value|default:'Username' }}</h4>
+        <div class="text-success small">{{ u_form.email.value|default:'Email' }}</div>
+      </div>
+    </div>
+    <div class="profile-edit-right flex-grow-1">
+      <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <h2 class="mb-4 text-success" style="font-weight: 600;">Edit Your Profile</h2>
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <div class="form-floating">
+              {{ u_form.username|as_crispy_field }}
+              <label for="id_username"></label>
+              <span class="text-danger small">{{ u_form.username.errors }}</span>
             </div>
           </div>
-          <div class="col-md-3 col-lg-3"></div>
+          <div class="col-12 col-md-6">
+            <div class="form-floating">
+              {{ u_form.email|as_crispy_field }}
+              <label for="id_email"></label>
+              <span class="text-danger small">{{ u_form.email.errors }}</span>
+            </div>
           </div>
-
+          <div class="col-12 col-md-6">
+            <div class="form-floating">
+              {{ p_form.telephone|as_crispy_field }}
+              <label for="id_telephone"></label>
+              <span class="text-danger small">{{ p_form.telephone.errors }}</span>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="form-floating">
+              {{ p_form.first_name|as_crispy_field }}
+              <label for="id_first_name"></label>
+              <span class="text-danger small">{{ p_form.first_name.errors }}</span>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="form-floating">
+              {{ p_form.last_name|as_crispy_field }}
+              <label for="id_last_name"></label>
+              <span class="text-danger small">{{ p_form.last_name.errors }}</span>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="profile-picture-upload-label" for="id_profile_picture"></label>
+            {{ p_form.profile_picture|as_crispy_field }}
+          </div>
+        </div>
+        <button type="submit" class="btn btn-success w-100 py-2 mt-2" style="font-weight: 500;">Update</button>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- FontAwesome for camera icon (if not already included) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 {% endblock %}

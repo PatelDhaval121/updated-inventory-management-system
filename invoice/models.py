@@ -29,14 +29,14 @@ class Invoice(models.Model):
     customer_name = models.CharField(max_length=30)
     contact_number = models.CharField(max_length=13)
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
-    price_per_item = models.FloatField(verbose_name='Price Per Item (Ksh)')
+    price_per_item = models.FloatField(verbose_name='Price Per Item (₹)')
     quantity = models.FloatField(default=0.00)
     shipping = models.FloatField(verbose_name='Shipping and Handling')
     total = models.FloatField(
-        verbose_name='Total Amount (Ksh)', editable=False
+        verbose_name='Total Amount (₹)', editable=False
     )
     grand_total = models.FloatField(
-        verbose_name='Grand Total (Ksh)', editable=False
+        verbose_name='Grand Total (₹)', editable=False
     )
 
     def save(self, *args, **kwargs):

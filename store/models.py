@@ -70,6 +70,7 @@ class Item(models.Model):
         product['text'] = self.name
         product['category'] = self.category.name
         product['quantity'] = 1
+        product['available_quantity'] = self.quantity  # Add available stock quantity
         product['total_product'] = 0
         return product
 

@@ -309,21 +309,21 @@
 </style>
 <div>
 <div class="text-center py-3">
-	<a href="#" class="btn btn-outline-success btn-sm">
+	<a href="#" class="btn btn-outline-success btn-sm" id="print-sale-btn">
 		<i class="fa fa-print"></i> Print
 	</a>
 </div>
-<section class="receipt container-ticket">
+<section class="receipt container-ticket" id="sale-receipt-section">
     <div class="ticket">
         <div class="head-ticket">
             <p class="x-bold">InventoryMS</p>
-            <p class="bold">Tom Mboya Street, Tudor</p>
-            <p class="bold">Tel: +2547 00 000000</p>
+            <p class="bold">88-c Bhimaji Complex Navsari,Gujarat,India</p>
+            <p class="bold">Tel: +91 9898754995</p>
             <br>
-            <p class="bold">P.O BOX. 90420-80100 MSA</p>
-            <p>Date: {{ sale.date_added|date:"Y/m/d H:i:s" }}</p>
+            <p>Date: {{ sale.date_added|date:"Y/m/d H:i:s" }} IST</p>
             <p>Receipt code: IMS{{ sale.id }}</p>
             <div class="code-barre">
+				<span></span>
 				<span></span>
 				<span></span>
 				<span></span>
@@ -381,24 +381,24 @@
                 <div class="hr-sm"></div>
                 <div class="col2">
                     <p>Sub Total</p>
-                    <p class="prix"><b>Ksh {{ sale.sub_total }}</b></p>
+                    <p class="prix"><b>₹ {{ sale.sub_total }}</b></p>
                 </div>
                 <br>
                 <div class="col2">
                     <p>Tax Amount</p>
-                    <p class="prix"><b>Ksh {{ sale.tax_amount }}</b></p>
+                    <p class="prix"><b>₹ {{ sale.tax_amount }}</b></p>
                 </div>
                 <div class="col2">
                     <p>Grand Total</p>
-                    <p class="prix"><b>Ksh {{ sale.grand_total }}</b></p>
+                    <p class="prix"><b>₹ {{ sale.grand_total }}</b></p>
                 </div>
                 <div class="col2">
                     <p>Amount Paid</p>
-                    <p class="prix"><b>Ksh {{ sale.amount_paid }}</b></p>
+                    <p class="prix"><b>₹ {{ sale.amount_paid }}</b></p>
                 </div>
                 <div class="col2">
                     <p>Balance</p>
-                    <p class="prix"><b>Ksh {{ sale.amount_change }}</b></p>
+                    <p class="prix"><b>₹ {{ sale.amount_change }}</b></p>
                 </div>
             </div>
             <div class="hr-lg"></div>
@@ -414,4 +414,15 @@
 </section>
 
 </div>
+<script>
+  document.getElementById('print-sale-btn').addEventListener('click', function(e) {
+    e.preventDefault();
+    var printContents = document.getElementById('sale-receipt-section').innerHTML;
+    var originalContents = document.body.innerHTML;
+    document.body.innerHTML = printContents;
+    window.print();
+    document.body.innerHTML = originalContents;
+    window.location.reload();
+  });
+</script>
 {% endblock %}

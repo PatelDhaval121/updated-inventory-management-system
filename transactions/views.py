@@ -90,7 +90,7 @@ def export_purchases_to_excel(request):
     columns = [
         'ID', 'Item', 'Description', 'Vendor', 'Order Date',
         'Delivery Date', 'Quantity', 'Delivery Status',
-        'Price per item (Ksh)', 'Total Value'
+        'Price per item (₹)', 'Total Value'
     ]
     worksheet.append(columns)
 
@@ -135,14 +135,14 @@ def export_purchases_to_excel(request):
 
 class SaleListView(LoginRequiredMixin, ListView):
     """
-    View to list all sales with pagination.
+    View to list all sales without pagination.
     """
 
     model = Sale
     template_name = "transactions/sales_list.html"
     context_object_name = "sales"
-    paginate_by = 10
-    ordering = ['date_added']
+    paginate_by = None
+    ordering = ['-date_added']
 
 
 class SaleDetailView(LoginRequiredMixin, DetailView):

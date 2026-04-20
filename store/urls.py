@@ -90,6 +90,11 @@ urlpatterns = [
         DeliveryDeleteView.as_view(),
         name='delivery-delete'
     ),
+    path(
+        'delivery/<int:pk>/mark-delivered/',
+        views.mark_delivery_completed,
+        name='delivery-mark-delivered'
+    ),
 
     # AJAX view
     path(
