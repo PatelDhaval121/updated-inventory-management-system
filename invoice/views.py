@@ -3,6 +3,7 @@ from django.urls import reverse
 
 # Authentication and permissions
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from InventoryMS.permissions import StaffDeletionPermissionMixin
 
 # Class-based views
 from django.views.generic import (
@@ -86,7 +87,7 @@ class InvoiceUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return self.request.user.is_superuser
 
 
-class InvoiceDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+class InvoiceDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, DeleteView):
     """
     View for deleting an invoice.
     """

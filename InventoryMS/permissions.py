@@ -1,0 +1,23 @@
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.contrib.auth.mixins import UserPassesTestMixin
+
+
+class StaffManagementPermissionMixin(UserPassesTestMixin):
+    """Allow only staff/superusers to access management actions."""
+
+    permission_message = "You do not have permission to perform this action."
+
+    def test_func(self):
+        user = self.request.user
+        return user.is_authenticated and (user.is_staff or user.is_superuser)
+
+    def handle_no_permission(self):
+        messages.error(self.request, self.permission_message)
+        return redirect("dashboard")
+
+
+class StaffDeletionPermissionMixin(StaffManagementPermissionMixin):
+    """Allow only staff/superusers to access destructive actions."""
+
+    permission_message = "You do not have permission to delete records."

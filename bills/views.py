@@ -10,6 +10,7 @@ from django.views.generic import (
 
 # Authentication and permissions
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from InventoryMS.permissions import StaffDeletionPermissionMixin
 
 # Third-party packages
 from django_tables2 import SingleTableView
@@ -75,7 +76,7 @@ class BillUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return reverse('bill_list')
 
 
-class BillDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+class BillDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, DeleteView):
     """View for deleting a bill."""
     model = Bill
     template_name = 'bills/billdelete.html'

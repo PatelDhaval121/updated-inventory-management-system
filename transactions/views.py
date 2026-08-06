@@ -14,6 +14,7 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 
 # Authentication and permissions
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from InventoryMS.permissions import StaffDeletionPermissionMixin
 
 # Third-party packages
 from openpyxl import Workbook
@@ -271,7 +272,7 @@ def SaleCreateView(request):
     return render(request, "transactions/sale_create.html", context=context)
 
 
-class SaleDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+class SaleDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, DeleteView):
     """
     View to delete a sale.
     """
@@ -344,7 +345,7 @@ class PurchaseUpdateView(LoginRequiredMixin, UpdateView):
         return reverse("purchaseslist")
 
 
-class PurchaseDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+class PurchaseDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, DeleteView):
     """
     View to delete a purchase.
     """

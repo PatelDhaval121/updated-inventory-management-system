@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 # Authentication and permissions
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from InventoryMS.permissions import StaffDeletionPermissionMixin
 
 # Class-based views
 from django.views.generic import (
@@ -150,7 +151,7 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return self.request.user.is_superuser
 
 
-class ProfileDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+class ProfileDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, DeleteView):
     """
     Delete an existing profile.
     Requires user to be logged in and have superuser status.
@@ -211,7 +212,7 @@ class CustomerUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('customer_list')
 
 
-class CustomerDeleteView(LoginRequiredMixin, DeleteView):
+class CustomerDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, DeleteView):
     """
     View for deleting a customer.
 
@@ -263,7 +264,7 @@ class VendorUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('vendor-list')
 
 
-class VendorDeleteView(LoginRequiredMixin, DeleteView):
+class VendorDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, DeleteView):
     model = Vendor
     template_name = 'accounts/vendor_confirm_delete.html'
     success_url = reverse_lazy('vendor-list')

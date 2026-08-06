@@ -45,6 +45,10 @@ from transactions.models import Sale, SaleDetail, Purchase
 from .models import Category, Item, Delivery
 from .forms import ItemForm, CategoryForm, DeliveryForm
 from .tables import ItemTable
+from InventoryMS.permissions import (
+    StaffDeletionPermissionMixin,
+    StaffManagementPermissionMixin,
+)
 
 
 @login_required
@@ -261,7 +265,7 @@ class ProductDetailView(LoginRequiredMixin, FormMixin, DetailView):
         return reverse("product-detail", kwargs={"slug": self.object.slug})
 
 
-class ProductCreateView(LoginRequiredMixin, CreateView):
+class ProductCreateView(LoginRequiredMixin, StaffManagementPermissionMixin, CreateView):
     """
     View class to create a new product.
 
@@ -276,16 +280,23 @@ class ProductCreateView(LoginRequiredMixin, CreateView):
     template_name = "store/productcreate.html"
     form_class = ItemForm
     success_url = "/products"
+    permission_message = "You do not have permission to create products."
 
     def test_func(self):
-        # item = Item.objects.get(id=pk)
-        if self.request.POST.get("quantity") < 1:
+        if not super().test_func():
             return False
-        else:
+
+        quantity = self.request.POST.get("quantity")
+        if quantity is None:
             return True
 
+        try:
+            return int(quantity) >= 1
+        except (TypeError, ValueError):
+            return False
 
-class ProductUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+
+class ProductUpdateView(LoginRequiredMixin, StaffManagementPermissionMixin, UpdateView):
     """
     View class to update product information.
 
@@ -300,15 +311,10 @@ class ProductUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     template_name = "store/productupdate.html"
     form_class = ItemForm
     success_url = "/products"
-
-    def test_func(self):
-        if self.request.user.is_superuser:
-            return True
-        else:
-            return False
+    permission_message = "You do not have permission to edit products."
 
 
-class ProductDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+class ProductDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, DeleteView):
     """
     View class to delete a product.
 
@@ -420,7 +426,7 @@ class DeliveryUpdateView(LoginRequiredMixin, UpdateView):
     success_url = "/deliveries"
 
 
-class DeliveryDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+class DeliveryDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, DeleteView):
     """
     View class to delete a delivery.
 
@@ -476,7 +482,7 @@ class CategoryUpdateView(LoginRequiredMixin, UpdateView):
         return reverse_lazy('category-detail', kwargs={'pk': self.object.pk})
 
 
-class CategoryDeleteView(LoginRequiredMixin, DeleteView):
+class CategoryDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, DeleteView):
     model = Category
     template_name = 'store/category_confirm_delete.html'
     context_object_name = 'category'

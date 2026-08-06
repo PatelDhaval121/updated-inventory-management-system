@@ -29,6 +29,8 @@ from .views import (
 urlpatterns = [
     # Dashboard
     path('', views.dashboard, name='dashboard'),
+    # Also allow '/dashboard' path for convenience (same view)
+    path('dashboard/', views.dashboard, name='dashboard'),
 
     # Product URLs
     path(
