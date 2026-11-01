@@ -112,3 +112,6 @@ ipython_config.py
 
 # pytype
 .pytype/
+
+# Local installers and generated binaries
+static/images/profile_pics/*.exe
