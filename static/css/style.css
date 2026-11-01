@@ -69,7 +69,7 @@ a {
 
 .sidebar .sidebar-header h5 a,
 .sidebar .sidebar-header p {
-  color: #fff;
+  color: #000;
   font-size: 0.875rem;
 }
 
@@ -183,4 +183,50 @@ a {
 .pagination .page-link {
   border-radius: 8px;
   margin: 0 2px;
+}
+
+/* Profile image sizing helpers */
+.avatar {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  display: inline-block;
+}
+
+.avatar-sm {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  display: inline-block;
+}
+
+/* Sidebar profile image */
+#sidebar-img, .sidebar .rounded-circle#sidebar-img {
+  width: 48px !important;
+  height: 48px !important;
+  object-fit: cover;
+}
+
+/* Full profile page image */
+.profile-page-image {
+  max-width: 160px;
+  height: auto;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+/* Staff table profile image */
+.staff-avatar {
+    width: 45px !important;
+    height: 45px !important;
+    max-width: 45px !important;
+    max-height: 45px !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
+}
+
+/* Optional: slightly larger on hover */
+.staff-avatar:hover {
+    transform: scale(1.1);
+    transition: 0.2s ease;
 }

@@ -1,4 +1,5 @@
 # Django core imports
+from datetime import datetime
 from django.urls import reverse
 
 # Authentication and permissions
@@ -29,6 +30,10 @@ class InvoiceListView(LoginRequiredMixin, ExportMixin, SingleTableView):
     context_object_name = 'invoices'
     paginate_by = 10
     table_pagination = False  # Disable table pagination
+
+    def get_export_filename(self, export_format):
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        return f"Invoices_{timestamp}.{export_format}"
 
 
 class InvoiceDetailView(DetailView):

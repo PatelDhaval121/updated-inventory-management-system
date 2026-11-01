@@ -10,7 +10,13 @@ class StaffManagementPermissionMixin(UserPassesTestMixin):
 
     def test_func(self):
         user = self.request.user
-        return user.is_authenticated and (user.is_staff or user.is_superuser)
+        if not user.is_authenticated:
+            return False
+        if user.is_staff or user.is_superuser:
+            return True
+
+        profile = getattr(user, "profile", None)
+        return profile is not None and profile.role in {"AD", "EX"}
 
     def handle_no_permission(self):
         messages.error(self.request, self.permission_message)

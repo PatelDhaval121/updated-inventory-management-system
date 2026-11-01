@@ -75,7 +75,7 @@ class Item(models.Model):
         return product
 
     class Meta:
-        ordering = ['name']
+        ordering = ['id']
         verbose_name_plural = 'Items'
 
 

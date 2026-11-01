@@ -1,4 +1,5 @@
-{% extends "store/base.html" %}{% load static %}{% load render_table from django_tables2 %}{% load querystring from django_tables2 %}{% block title %}Purchases{%endblock title%}
+{% extends "store/base.html" %}{% load static %}{% load render_table from django_tables2 %}{% load querystring from
+django_tables2 %}{% block title %}Purchases{%endblock title%}
 
 {% block content %}
 <!-- Header Section -->
@@ -22,9 +23,10 @@
 
 <div class="container">
     <style>
-      .table th, .table td {
-          text-align: center;
-      }
+        .table th,
+        .table td {
+            text-align: center;
+        }
     </style>
     <table class="table table-sm table-striped table-bordered">
         <thead class="thead-light">
@@ -48,13 +50,13 @@
                 <td>{{ purchase.total_value }}</td>
                 <td>
                     {% if purchase.delivery_status == 'P' %}
-                        <span class="badge badge-pill bg-soft-danger text-danger me-2">
-                            Pending
-                        </span>
+                    <span class="badge badge-pill bg-soft-danger text-danger me-2">
+                        Pending
+                    </span>
                     {% else %}
-                        <span class="badge badge-pill bg-soft-success text-success me-2">
-                            Successful
-                        </span>
+                    <span class="badge badge-pill bg-soft-success text-success me-2">
+                        Successful
+                    </span>
                     {% endif %}
                 </td>
                 <td>{{ purchase.delivery_date }}</td>
@@ -75,43 +77,45 @@
         {% if is_paginated %}
         <nav aria-label="Page navigation">
             <ul class="pagination justify-content-center">
+                <!-- Previous -->
                 {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
-                        <span aria-hidden="true">&laquo;</span>
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                        <i class="fa-solid fa-angle-left"></i> Previous
                     </a>
                 </li>
                 {% else %}
                 <li class="page-item disabled">
-                    <span class="page-link" aria-label="Previous">
-                        <span aria-hidden="true">&laquo;</span>
+                    <span class="page-link">
+                        <i class="fa-solid fa-angle-left"></i> Previous
                     </span>
                 </li>
                 {% endif %}
-                {% for i in paginator.page_range %}
-                {% if page_obj.number == i %}
-                <li class="page-item active" aria-current="page">
-                    <span class="page-link">{{ i }} <span class="visually-hidden">(current)</span></span>
+
+                <!-- Page Numbers -->
+                {% for i in paginator.page_range %} {% if i == page_obj.number %}
+                <li class="page-item active">
+                    <span class="page-link">{{ i }}</span>
                 </li>
-                {% else %}
-                <li class="page-item">
+                {% elif i >= page_obj.number|add:'-2' and i <= page_obj.number|add:'2' %} <li class="page-item">
                     <a class="page-link" href="?page={{ i }}">{{ i }}</a>
-                </li>
-                {% endif %}
-                {% endfor %}
-                {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
-                        <span aria-hidden="true">&raquo;</span>
-                    </a>
-                </li>
-                {% else %}
-                <li class="page-item disabled">
-                    <span class="page-link" aria-label="Next">
-                        <span aria-hidden="true">&raquo;</span>
-                    </span>
-                </li>
-                {% endif %}
+                    </li>
+                    {% endif %} {% endfor %}
+
+                    <!-- Next -->
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                            Next <i class="fa-solid fa-angle-right"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            Next <i class="fa-solid fa-angle-right"></i>
+                        </span>
+                    </li>
+                    {% endif %}
             </ul>
         </nav>
         {% endif %}

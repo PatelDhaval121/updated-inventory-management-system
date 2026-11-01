@@ -1,4 +1,5 @@
 # Django core imports
+from datetime import datetime
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.urls import reverse_lazy, reverse
@@ -95,14 +96,22 @@ class ProfileListView(LoginRequiredMixin, ExportMixin, SingleTableView):
     Display a list of profiles in a table format.
     Requires user to be logged in
     and supports exporting the table data.
-    Pagination is applied with 10 profiles per page.
+    Pagination is applied with 8 profiles per page.
     """
     model = Profile
     template_name = 'accounts/stafflist.html'
     context_object_name = 'profiles'
     table_class = ProfileTable
-    paginate_by = 10
+    paginate_by = 8
     table_pagination = False
+
+    def get_queryset(self):
+        """Return profiles in stable account ID order."""
+        return super().get_queryset().order_by('id')
+
+    def get_export_filename(self, export_format):
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        return f"Staff_{timestamp}.{export_format}"
 
 
 class ProfileCreateView(LoginRequiredMixin, CreateView):
@@ -177,11 +186,16 @@ class CustomerListView(LoginRequiredMixin, ListView):
     """
     View for listing all customers.
 
-    Requires the user to be logged in. Displays a list of all Customer objects.
+    Requires the user to be logged in. Displays customers eight per page.
     """
     model = Customer
     template_name = 'accounts/customer_list.html'
     context_object_name = 'customers'
+    paginate_by = 8
+
+    def get_queryset(self):
+        """Return customers in stable ID order for consistent pagination."""
+        return super().get_queryset().order_by('id')
 
 
 class CustomerCreateView(LoginRequiredMixin, CreateView):
@@ -212,7 +226,7 @@ class CustomerUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('customer_list')
 
 
-class CustomerDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, DeleteView):
+class CustomerDeleteView(LoginRequiredMixin, DeleteView):
     """
     View for deleting a customer.
 
@@ -248,6 +262,10 @@ class VendorListView(LoginRequiredMixin, ListView):
     template_name = 'accounts/vendor_list.html'
     context_object_name = 'vendors'
     paginate_by = 10
+
+    def get_queryset(self):
+        """Return vendors in a stable order for consistent pagination."""
+        return super().get_queryset().order_by('name', 'id')
 
 
 class VendorCreateView(LoginRequiredMixin, CreateView):

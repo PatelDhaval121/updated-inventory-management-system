@@ -16,6 +16,7 @@ from functools import reduce
 import json
 
 # Django core imports
+from datetime import datetime
 from django.shortcuts import render, redirect
 from django.urls import reverse, reverse_lazy
 from django.contrib import messages
@@ -23,6 +24,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q, Count, Sum, F, FloatField
+from django.db import IntegrityError
 
 # Authentication and permissions
 from django.contrib.auth.decorators import login_required
@@ -142,23 +144,46 @@ def dashboard(request):
     daily_profit_data.reverse()
     daily_labels.reverse()
 
-    # Build Category Sales Trend (Last 30 Days)
-    # Determine top categories by total sales in the period
+    # Build Category Sales Trend (Last 30 Days). If the database has no sales
+    # in the current window, use the latest available 30-day sales period.
     from django.db.models import ExpressionWrapper
     value_expr = ExpressionWrapper(F('price') * F('quantity'), output_field=FloatField())
+    trend_end = timezone.now()
+    trend_start = trend_end - timedelta(days=30)
     top_categories_qs = (
-        SaleDetail.objects.filter(sale__date_added__gte=thirty_days_ago)
+        SaleDetail.objects.filter(
+            sale__date_added__gte=trend_start,
+            sale__date_added__lte=trend_end
+        )
         .values('item__category__name')
         .annotate(total=Sum(value_expr))
         .order_by('-total')
     )
+
+    if not top_categories_qs.exists():
+        latest_sale_date = Sale.objects.order_by('-date_added').values_list(
+            'date_added', flat=True
+        ).first()
+        if latest_sale_date:
+            trend_end = latest_sale_date
+            trend_start = trend_end - timedelta(days=30)
+            top_categories_qs = (
+                SaleDetail.objects.filter(
+                    sale__date_added__gte=trend_start,
+                    sale__date_added__lte=trend_end
+                )
+                .values('item__category__name')
+                .annotate(total=Sum(value_expr))
+                .order_by('-total')
+            )
+
     top_categories = [c['item__category__name'] for c in top_categories_qs[:5]]
 
     category_trend_labels = []
     category_trend_series = {cat: [] for cat in top_categories}
 
     for i in range(30):
-        date = timezone.now() - timedelta(days=i)
+        date = trend_end - timedelta(days=i)
         start_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_of_day = date.replace(hour=23, minute=59, second=59, microsecond=999999)
 
@@ -223,6 +248,12 @@ class ProductListView(LoginRequiredMixin, ExportMixin, tables.SingleTableView):
     context_object_name = "items"
     paginate_by = 10
     SingleTableView.table_pagination = False
+    def get_export_filename(self, export_format):
+        """
+        Generate a new filename every time the file is exported.
+        """
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        return f"Products_{timestamp}.{export_format}"
 
 
 class ItemSearchListView(ProductListView):
@@ -334,6 +365,20 @@ class ProductDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, Delete
         else:
             return False
 
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        try:
+            response = super().delete(request, *args, **kwargs)
+            messages.success(request, f"Product '{self.object.name}' deleted successfully.")
+            return response
+        except IntegrityError:
+            messages.error(
+                request,
+                "Cannot delete this product because related transactional records exist. "
+                "Delete or detach related Sales/Purchases/Invoices first."
+            )
+            return redirect(self.success_url)
+
 
 class DeliveryListView(
     LoginRequiredMixin, ExportMixin, tables.SingleTableView
@@ -352,6 +397,13 @@ class DeliveryListView(
     pagination = 10
     template_name = "store/deliveries.html"
     context_object_name = "deliveries"
+
+    def get_export_filename(self, export_format):
+        """
+        Include the export date and time in delivery workbook filenames.
+        """
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        return f"Packages_{timestamp}.{export_format}"
 
 
 class DeliverySearchListView(DeliveryListView):
@@ -453,6 +505,11 @@ class CategoryListView(LoginRequiredMixin, ListView):
     context_object_name = 'categories'
     paginate_by = 10
     login_url = 'login'
+
+    def get_queryset(self):
+        return super().get_queryset().annotate(
+            item_count=Count('item')
+        ).order_by('name')
 
 
 class CategoryDetailView(LoginRequiredMixin, DetailView):

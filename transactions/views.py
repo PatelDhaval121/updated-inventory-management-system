@@ -7,6 +7,7 @@ from django.http import JsonResponse, HttpResponse
 from django.urls import reverse
 from django.shortcuts import render
 from django.db import transaction
+from django.utils import timezone
 
 # Class-based views
 from django.views.generic import DetailView, ListView
@@ -75,7 +76,10 @@ def export_sales_to_excel(request):
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
     )
-    response['Content-Disposition'] = 'attachment; filename=sales.xlsx'
+    export_timestamp = timezone.localtime().strftime('%Y-%m-%d_%H-%M-%S')
+    response['Content-Disposition'] = (
+        f'attachment; filename="Sales_{export_timestamp}.xlsx"'
+    )
     workbook.save(response)
 
     return response
@@ -99,16 +103,14 @@ def export_purchases_to_excel(request):
     purchases = Purchase.objects.all()
 
     for purchase in purchases:
-        # Convert timezone-aware datetime to naive datetime
-        delivery_tzinfo = purchase.delivery_date.tzinfo
-        order_tzinfo = purchase.order_date.tzinfo
+        order_date = purchase.order_date
+        delivery_date = purchase.delivery_date
 
-        if delivery_tzinfo or order_tzinfo is not None:
-            delivery_date = purchase.delivery_date.replace(tzinfo=None)
-            order_date = purchase.order_date.replace(tzinfo=None)
-        else:
-            delivery_date = purchase.delivery_date
-            order_date = purchase.order_date
+        if timezone.is_aware(order_date):
+            order_date = timezone.make_naive(order_date)
+        if delivery_date and timezone.is_aware(delivery_date):
+            delivery_date = timezone.make_naive(delivery_date)
+
         worksheet.append([
             purchase.id,
             purchase.item.name,
@@ -121,6 +123,11 @@ def export_purchases_to_excel(request):
             purchase.price,
             purchase.total_value
         ])
+        row = worksheet.max_row
+        for column in (5, 6):
+            worksheet.cell(row=row, column=column).number_format = (
+                'yyyy-mm-dd hh:mm:ss'
+            )
 
     # Set up the response to send the file
     response = HttpResponse(
@@ -128,22 +135,21 @@ def export_purchases_to_excel(request):
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
     )
-    response['Content-Disposition'] = 'attachment; filename=purchases.xlsx'
+    export_timestamp = timezone.localtime().strftime('%Y-%m-%d_%H-%M-%S')
+    response['Content-Disposition'] = (
+        f'attachment; filename="purchases_{export_timestamp}.xlsx"'
+    )
     workbook.save(response)
 
     return response
 
 
 class SaleListView(LoginRequiredMixin, ListView):
-    """
-    View to list all sales without pagination.
-    """
-
     model = Sale
     template_name = "transactions/sales_list.html"
     context_object_name = "sales"
-    paginate_by = None
-    ordering = ['-date_added']
+    paginate_by = 10
+    ordering = ['id']
 
 
 class SaleDetailView(LoginRequiredMixin, DetailView):

@@ -24,9 +24,11 @@
             text-align: center;
         }
     </style>
-    <table class="table table-bordered table-striped">
+    <div class="table-responsive">
+    <table class="table table-bordered table-striped align-middle">
         <thead class="thead-light">
             <tr>
+                <th scope="col">#</th>
                 <th>Name</th>
                 <th>Phone Number</th>
                 <th>Address</th>
@@ -36,27 +38,36 @@
         <tbody>
             {% for vendor in vendors %}
             <tr>
-                <td>{{ vendor.name }}</td>
-                <td>{{ vendor.phone_number }}</td>
-                <td>{{ vendor.address }}</td>
+                <th scope="row">{{ page_obj.start_index|add:forloop.counter0 }}</th>
+                <td class="text-start">{{ vendor.name }}</td>
+                <td>{{ vendor.phone_number|default:"-" }}</td>
+                <td class="text-start">{{ vendor.address|default:"-" }}</td>
                 <td>
                     <a href="{% url 'vendor-update' vendor.pk %}" class="btn btn-outline-warning btn-sm">
-                        <i class="fas fa-edit me-2"></i>Edit
+                        <i class="fas fa-edit"></i> Edit
                     </a>
                     <a href="{% url 'vendor-delete' vendor.pk %}" class="btn btn-outline-danger btn-sm">
-                        <i class="fas fa-trash-alt me-2"></i>Delete
+                        <i class="fas fa-trash-alt"></i> Delete
                     </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center text-muted py-4">
+                    No vendors found.
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
 
     <!-- Pagination controls -->
+    {% if is_paginated %}
     <nav aria-label="Page navigation example">
         <ul class="pagination justify-content-center">
             <!-- First Page Link -->
-            {% if vendors.has_previous %}
+            {% if page_obj.has_previous %}
             <li class="page-item">
                 <a class="page-link" href="?page=1" aria-label="First">
                     <span aria-hidden="true">&laquo;&laquo;</span>
@@ -71,9 +82,9 @@
             {% endif %}
 
             <!-- Previous Page Link -->
-            {% if vendors.has_previous %}
+            {% if page_obj.has_previous %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ vendors.previous_page_number }}" aria-label="Previous">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
                     <span aria-hidden="true">&laquo;</span>
                 </a>
             </li>
@@ -86,8 +97,8 @@
             {% endif %}
 
             <!-- Page Number Links -->
-            {% for num in vendors.paginator.page_range %}
-                {% if vendors.number == num %}
+            {% for num in paginator.page_range %}
+                {% if page_obj.number == num %}
                 <li class="page-item active">
                     <span class="page-link">{{ num }}</span>
                 </li>
@@ -99,9 +110,9 @@
             {% endfor %}
 
             <!-- Next Page Link -->
-            {% if vendors.has_next %}
+            {% if page_obj.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ vendors.next_page_number }}" aria-label="Next">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
                     <span aria-hidden="true">&raquo;</span>
                 </a>
             </li>
@@ -114,9 +125,9 @@
             {% endif %}
 
             <!-- Last Page Link -->
-            {% if vendors.has_next %}
+            {% if page_obj.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ vendors.paginator.num_pages }}" aria-label="Last">
+                <a class="page-link" href="?page={{ paginator.num_pages }}" aria-label="Last">
                     <span aria-hidden="true">&raquo;&raquo;</span>
                 </a>
             </li>
@@ -129,6 +140,7 @@
             {% endif %}
         </ul>
     </nav>
+    {% endif %}
 
 </div>
 {% endblock %}

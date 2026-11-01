@@ -18,7 +18,9 @@ class Sale(models.Model):
     )
     customer = models.ForeignKey(
         Customer,
-        on_delete=models.DO_NOTHING,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         db_column="customer"
     )
     sub_total = models.DecimalField(
@@ -157,4 +159,4 @@ class Purchase(models.Model):
         return str(self.item.name)
 
     class Meta:
-        ordering = ["order_date"]
+        ordering = ["id"]

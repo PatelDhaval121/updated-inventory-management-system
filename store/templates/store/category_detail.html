@@ -16,9 +16,15 @@
                         <a href="{% url 'category-update' category.pk %}" class="btn btn-warning">
                             <i class="fas fa-edit me-2"></i> Edit
                         </a>
-                        <a href="{% url 'category-delete' category.pk %}" class="btn btn-danger">
-                            <i class="fas fa-trash-alt me-2"></i> Delete
-                        </a>
+                        {% if user.is_staff or user.is_superuser %}
+                            <a href="{% url 'category-delete' category.pk %}" class="btn btn-danger">
+                                <i class="fas fa-trash-alt me-2"></i> Delete
+                            </a>
+                        {% else %}
+                            <span class="text-muted small align-self-center">
+                                <i class="fas fa-lock me-1"></i> Admin access required to delete
+                            </span>
+                        {% endif %}
                         <a href="{% url 'category-list' %}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left me-2"></i> Back to list
                         </a>

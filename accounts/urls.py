@@ -23,6 +23,8 @@ from .views import (
 )
 
 urlpatterns = [
+     # Landing for staff section: list all profiles
+     path('', ProfileListView.as_view(), name='staff-home'),
     # User authentication URLs
     path('register/', user_views.register, name='user-register'),
     path('login/', auth_views.LoginView.as_view(

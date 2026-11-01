@@ -1,4 +1,5 @@
 # Django core imports
+from datetime import datetime
 from django.urls import reverse
 
 # Class-based views
@@ -30,6 +31,10 @@ class BillListView(LoginRequiredMixin, ExportMixin, SingleTableView):
     context_object_name = 'bills'
     paginate_by = 10
     SingleTableView.table_pagination = False
+
+    def get_export_filename(self, export_format):
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        return f"Bills_{timestamp}.{export_format}"
 
 
 class BillCreateView(LoginRequiredMixin, CreateView):

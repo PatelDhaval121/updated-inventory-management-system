@@ -81,23 +81,60 @@ cd sales-and-inventory-management
 
 1. **Set Up the Virtual Environment**
 
-    ```bash
-    python -m venv venv
-    venv\Scripts\activate
+    ```powershell
+    py -m venv .venv
+    .\.venv\Scripts\Activate.ps1
     ```
 
 2. **Install Dependencies**
 
-    ```bash
-    pip install -r requirements.txt
+    ```powershell
+    .\.venv\Scripts\python.exe -m pip install -r requirements.txt
     ```
 
 3. **Apply Migrations and Run the Server**
 
-    ```bash
-    python manage.py migrate
-    python manage.py runserver
+    ```powershell
+    .\.venv\Scripts\python.exe manage.py migrate
+    .\.venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000
     ```
+
+    If PowerShell blocks activation (`Activate.ps1` is not digitally signed), skip activation and call the interpreter directly with `.\.venv\Scripts\python.exe` as shown above.
+
+### Production configuration
+
+Set these environment variables in production instead of using the local
+development defaults:
+
+```powershell
+$env:DJANGO_SECRET_KEY = "generate-a-long-random-secret"
+$env:DJANGO_DEBUG = "False"
+$env:DJANGO_ALLOWED_HOSTS = "example.com,www.example.com"
+$env:DJANGO_SECURE_SSL_REDIRECT = "True"
+$env:DJANGO_SESSION_COOKIE_SECURE = "True"
+$env:DJANGO_CSRF_COOKIE_SECURE = "True"
+$env:DJANGO_SECURE_HSTS_SECONDS = "31536000"
+$env:DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS = "True"
+$env:DJANGO_SECURE_HSTS_PRELOAD = "True"
+```
+
+The default database is SQLite for local development. For PostgreSQL, set:
+
+```powershell
+$env:DJANGO_DB_ENGINE = "django.db.backends.postgresql"
+$env:DJANGO_DB_NAME = "inventory"
+$env:DJANGO_DB_USER = "inventory_user"
+$env:DJANGO_DB_PASSWORD = "use-a-secret-from-your-hosting-provider"
+$env:DJANGO_DB_HOST = "localhost"
+$env:DJANGO_DB_PORT = "5432"
+```
+
+After setting the database variables, apply migrations before starting the
+server:
+
+```powershell
+.\.venv\Scripts\python.exe manage.py migrate
+```
 
 ## Screenshots
 
