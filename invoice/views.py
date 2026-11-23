@@ -1,10 +1,15 @@
 # Django core imports
 from datetime import datetime
 from django.urls import reverse
+from django.db.models import Q
 
 # Authentication and permissions
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from InventoryMS.permissions import StaffDeletionPermissionMixin
+from InventoryMS.permissions import (
+    StaffDeletionPermissionMixin,
+    StaffManagementPermissionMixin,
+    StaffExportPermissionMixin,
+)
 
 # Class-based views
 from django.views.generic import (
@@ -20,7 +25,12 @@ from .models import Invoice
 from .tables import InvoiceTable
 
 
-class InvoiceListView(LoginRequiredMixin, ExportMixin, SingleTableView):
+class InvoiceListView(
+    LoginRequiredMixin,
+    StaffExportPermissionMixin,
+    ExportMixin,
+    SingleTableView,
+):
     """
     View for listing invoices with table export functionality.
     """
@@ -31,12 +41,26 @@ class InvoiceListView(LoginRequiredMixin, ExportMixin, SingleTableView):
     paginate_by = 10
     table_pagination = False  # Disable table pagination
 
+    def get_queryset(self):
+        queryset = super().get_queryset().order_by('-date', '-pk')
+        query = self.request.GET.get("q", "").strip()
+        if query:
+            filters = (
+                Q(customer_name__icontains=query)
+                | Q(contact_number__icontains=query)
+                | Q(item__name__icontains=query)
+            )
+            if query.isdecimal():
+                filters |= Q(pk=int(query))
+            queryset = queryset.filter(filters)
+        return queryset
+
     def get_export_filename(self, export_format):
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         return f"Invoices_{timestamp}.{export_format}"
 
 
-class InvoiceDetailView(DetailView):
+class InvoiceDetailView(LoginRequiredMixin, DetailView):
     """
     View for displaying invoice details.
     """
@@ -50,7 +74,9 @@ class InvoiceDetailView(DetailView):
         return reverse('invoice-detail', kwargs={'slug': self.object.pk})
 
 
-class InvoiceCreateView(LoginRequiredMixin, CreateView):
+class InvoiceCreateView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, CreateView
+):
     """
     View for creating a new invoice.
     """

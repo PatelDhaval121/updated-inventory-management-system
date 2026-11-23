@@ -50,6 +50,8 @@ from .tables import ItemTable
 from InventoryMS.permissions import (
     StaffDeletionPermissionMixin,
     StaffManagementPermissionMixin,
+    StaffExportPermissionMixin,
+    has_management_permission,
 )
 
 
@@ -230,7 +232,13 @@ def dashboard(request):
     return render(request, "store/dashboard.html", context)
 
 
-class ProductListView(LoginRequiredMixin, ExportMixin, tables.SingleTableView):
+class ProductListView(
+    LoginRequiredMixin,
+    StaffExportPermissionMixin,
+    StaffManagementPermissionMixin,
+    ExportMixin,
+    tables.SingleTableView,
+):
     """
     View class to display a list of products.
 
@@ -280,7 +288,9 @@ class ItemSearchListView(ProductListView):
         return result
 
 
-class ProductDetailView(LoginRequiredMixin, FormMixin, DetailView):
+class ProductDetailView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, FormMixin, DetailView
+):
     """
     View class to display detailed information about a product.
 
@@ -381,7 +391,10 @@ class ProductDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, Delete
 
 
 class DeliveryListView(
-    LoginRequiredMixin, ExportMixin, tables.SingleTableView
+    LoginRequiredMixin,
+    StaffExportPermissionMixin,
+    ExportMixin,
+    tables.SingleTableView,
 ):
     """
     View class to display a list of deliveries.
@@ -394,9 +407,28 @@ class DeliveryListView(
     """
 
     model = Delivery
-    pagination = 10
+    paginate_by = 10
     template_name = "store/deliveries.html"
     context_object_name = "deliveries"
+
+    def get_queryset(self):
+        queryset = super().get_queryset().order_by("pk")
+        query = self.request.GET.get("q", "").strip()
+        if query:
+            filters = (
+                Q(item__name__icontains=query)
+                | Q(customer_name__icontains=query)
+                | Q(phone_number__icontains=query)
+                | Q(location__icontains=query)
+            )
+            if query.isdecimal():
+                filters |= Q(pk=int(query))
+            if query.casefold() == "delivered":
+                filters |= Q(is_delivered=True)
+            elif query.casefold() == "pending":
+                filters |= Q(is_delivered=False)
+            queryset = queryset.filter(filters)
+        return queryset
 
     def get_export_filename(self, export_format):
         """
@@ -444,7 +476,9 @@ class DeliveryDetailView(LoginRequiredMixin, DetailView):
     template_name = "store/deliverydetail.html"
 
 
-class DeliveryCreateView(LoginRequiredMixin, CreateView):
+class DeliveryCreateView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, CreateView
+):
     """
     View class to create a new delivery.
 
@@ -461,7 +495,9 @@ class DeliveryCreateView(LoginRequiredMixin, CreateView):
     success_url = "/deliveries"
 
 
-class DeliveryUpdateView(LoginRequiredMixin, UpdateView):
+class DeliveryUpdateView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, UpdateView
+):
     """
     View class to update delivery information.
 
@@ -499,7 +535,9 @@ class DeliveryDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, Delet
             return False
 
 
-class CategoryListView(LoginRequiredMixin, ListView):
+class CategoryListView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, ListView
+):
     model = Category
     template_name = 'store/category_list.html'
     context_object_name = 'categories'
@@ -512,14 +550,18 @@ class CategoryListView(LoginRequiredMixin, ListView):
         ).order_by('name')
 
 
-class CategoryDetailView(LoginRequiredMixin, DetailView):
+class CategoryDetailView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, DetailView
+):
     model = Category
     template_name = 'store/category_detail.html'
     context_object_name = 'category'
     login_url = 'login'
 
 
-class CategoryCreateView(LoginRequiredMixin, CreateView):
+class CategoryCreateView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, CreateView
+):
     model = Category
     template_name = 'store/category_form.html'
     form_class = CategoryForm
@@ -529,7 +571,9 @@ class CategoryCreateView(LoginRequiredMixin, CreateView):
         return reverse_lazy('category-detail', kwargs={'pk': self.object.pk})
 
 
-class CategoryUpdateView(LoginRequiredMixin, UpdateView):
+class CategoryUpdateView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, UpdateView
+):
     model = Category
     template_name = 'store/category_form.html'
     form_class = CategoryForm
@@ -552,6 +596,13 @@ def mark_delivery_completed(request, pk):
     """
     Mark a delivery as completed (is_delivered=True)
     """
+    if not has_management_permission(request.user):
+        messages.error(
+            request,
+            "You do not have permission to update package status.",
+        )
+        return redirect("dashboard")
+
     try:
         delivery = Delivery.objects.get(pk=pk)
         delivery.is_delivered = True

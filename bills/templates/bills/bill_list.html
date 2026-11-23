@@ -29,22 +29,28 @@
         }
     </style>
 
-    <!-- Search Form (Commented Out) -->
-    {% comment %}
-    <form method="GET" class="container mb-3">
-        {{ filter.form }}
-        <button type="submit" class="btn btn-sm btn-success fa fa-search"> Search</button>
-    </form>
-    {% endcomment %}
-
     <div class="mb-3">
+        {% if user.is_staff or user.is_superuser or user.profile.role == "AD" or user.profile.role == "EX" %}
         <a class="btn btn-success btn-sm" href="{% url 'bill_create' %}">
             <i class="fa-solid fa-plus me-2"></i> Add a Bill Record
         </a>
         <a class="float-end btn btn-success btn-sm" href="{% querystring '_export'='xlsx' %}">
             <i class="fa-solid fa-download me-2"></i> Export to Excel
         </a>
+        {% endif %}
     </div>
+    <form method="get" class="row g-2 mb-3" role="search">
+        <div class="col">
+            <input type="search" name="q" value="{{ request.GET.q }}" class="form-control"
+                placeholder="Search bills by ID, institution, contact, or details" aria-label="Search bills">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-success">Search</button>
+            {% if request.GET.q %}
+            <a class="btn btn-outline-secondary" href="{% url 'bill_list' %}">Clear</a>
+            {% endif %}
+        </div>
+    </form>
 
     <div class="m-2">
         <table class="table table-sm table-striped table-bordered">
@@ -85,13 +91,23 @@
                         {% endif %}
                     </td>
                     <td>
+                        {% if user.is_staff or user.is_superuser or user.profile.role == "AD" or user.profile.role == "EX" %}
                         <a class="text-info" href="{% url 'bill_update' bill.slug %}">
                             <i class="fa-solid fa-pen"></i>
                         </a>
+                        {% if user.is_superuser %}
                         <a class="text-danger float-end" href="{% url 'bill_delete' bill.pk %}">
                             <i class="fa-solid fa-trash"></i>
                         </a>
+                        {% endif %}
+                        {% else %}
+                        <span class="text-muted">View only</span>
+                        {% endif %}
                     </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-4">No bills found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -106,7 +122,7 @@
                 <!-- Previous -->
                 {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                    <a class="page-link" href="?q={{ request.GET.q|urlencode }}&amp;page={{ page_obj.previous_page_number }}">
                         <i class="fa-solid fa-angle-left"></i> Previous
                     </a>
                 </li>
@@ -124,14 +140,14 @@
                     <span class="page-link">{{ i }}</span>
                 </li>
                 {% elif i >= page_obj.number|add:'-2' and i <= page_obj.number|add:'2' %} <li class="page-item">
-                    <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                    <a class="page-link" href="?q={{ request.GET.q|urlencode }}&amp;page={{ i }}">{{ i }}</a>
                     </li>
                     {% endif %} {% endfor %}
 
                     <!-- Next -->
                     {% if page_obj.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                        <a class="page-link" href="?q={{ request.GET.q|urlencode }}&amp;page={{ page_obj.next_page_number }}">
                             Next <i class="fa-solid fa-angle-right"></i>
                         </a>
                     </li>

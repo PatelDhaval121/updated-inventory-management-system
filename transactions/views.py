@@ -5,17 +5,26 @@ import logging
 # Django core imports
 from django.http import JsonResponse, HttpResponse
 from django.urls import reverse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.utils import timezone
+from django.db.models import Q
 
 # Class-based views
 from django.views.generic import DetailView, ListView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 
 # Authentication and permissions
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from InventoryMS.permissions import StaffDeletionPermissionMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
+from InventoryMS.permissions import (
+    StaffDeletionPermissionMixin,
+    StaffManagementPermissionMixin,
+    PurchaseOrderOwnerOrAdminPermissionMixin,
+    PurchaseOrderOwnerOrManagementPermissionMixin,
+    has_management_permission,
+)
 
 # Third-party packages
 from openpyxl import Workbook
@@ -34,7 +43,12 @@ def is_ajax(request):
     return request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
 
 
+@login_required
 def export_sales_to_excel(request):
+    if not has_management_permission(request.user):
+        messages.error(request, "You do not have permission to export records.")
+        return redirect("dashboard")
+
     # Create a workbook and select the active worksheet.
     workbook = Workbook()
     worksheet = workbook.active
@@ -85,7 +99,12 @@ def export_sales_to_excel(request):
     return response
 
 
+@login_required
 def export_purchases_to_excel(request):
+    if not has_management_permission(request.user):
+        messages.error(request, "You do not have permission to export records.")
+        return redirect("dashboard")
+
     # Create a workbook and select the active worksheet.
     workbook = Workbook()
     worksheet = workbook.active
@@ -151,6 +170,21 @@ class SaleListView(LoginRequiredMixin, ListView):
     paginate_by = 10
     ordering = ['id']
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        query = self.request.GET.get("q", "").strip()
+        if query:
+            filters = (
+                Q(customer__first_name__icontains=query)
+                | Q(customer__last_name__icontains=query)
+                | Q(customer__phone__icontains=query)
+                | Q(customer__email__icontains=query)
+            )
+            if query.isdecimal():
+                filters |= Q(pk=int(query))
+            queryset = queryset.filter(filters)
+        return queryset
+
 
 class SaleDetailView(LoginRequiredMixin, DetailView):
     """
@@ -161,7 +195,15 @@ class SaleDetailView(LoginRequiredMixin, DetailView):
     template_name = "transactions/saledetail.html"
 
 
+@login_required
 def SaleCreateView(request):
+    if not has_management_permission(request.user):
+        messages.error(
+            request,
+            "You do not have permission to create sales orders.",
+        )
+        return redirect("dashboard")
+
     context = {
         "active_icon": "sales",
         "customers": [c.to_select2() for c in Customer.objects.all()]
@@ -309,6 +351,20 @@ class PurchaseListView(LoginRequiredMixin, ListView):
     context_object_name = "purchases"
     paginate_by = 10
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        query = self.request.GET.get("q", "").strip()
+        if query:
+            filters = (
+                Q(item__name__icontains=query)
+                | Q(vendor__name__icontains=query)
+                | Q(description__icontains=query)
+            )
+            if query.isdecimal():
+                filters |= Q(pk=int(query))
+            queryset = queryset.filter(filters)
+        return queryset
+
 
 class PurchaseDetailView(LoginRequiredMixin, DetailView):
     """
@@ -328,6 +384,10 @@ class PurchaseCreateView(LoginRequiredMixin, CreateView):
     form_class = PurchaseForm
     template_name = "transactions/purchases_form.html"
 
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
     def get_success_url(self):
         """
         Redirect to the purchases list after successful form submission.
@@ -335,7 +395,11 @@ class PurchaseCreateView(LoginRequiredMixin, CreateView):
         return reverse("purchaseslist")
 
 
-class PurchaseUpdateView(LoginRequiredMixin, UpdateView):
+class PurchaseUpdateView(
+    LoginRequiredMixin,
+    PurchaseOrderOwnerOrManagementPermissionMixin,
+    UpdateView,
+):
     """
     View to update an existing purchase.
     """
@@ -351,7 +415,11 @@ class PurchaseUpdateView(LoginRequiredMixin, UpdateView):
         return reverse("purchaseslist")
 
 
-class PurchaseDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, DeleteView):
+class PurchaseDeleteView(
+    LoginRequiredMixin,
+    PurchaseOrderOwnerOrAdminPermissionMixin,
+    DeleteView,
+):
     """
     View to delete a purchase.
     """
@@ -364,9 +432,3 @@ class PurchaseDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, Delet
         Redirect to the purchases list after successful deletion.
         """
         return reverse("purchaseslist")
-
-    def test_func(self):
-        """
-        Allow deletion only for superusers.
-        """
-        return self.request.user.is_superuser

@@ -23,6 +23,8 @@ class CustomerListViewTests(TestCase):
             username="customer-list-user",
             password="test-password",
         )
+        self.user.profile.role = "EX"
+        self.user.profile.save(update_fields=["role"])
         self.client.force_login(self.user)
         for index in range(1, 11):
             Customer.objects.create(
@@ -148,7 +150,7 @@ class CustomerDeleteViewTests(TestCase):
         self.assertRedirects(response, reverse("customer_list"))
         self.assertFalse(Customer.objects.filter(pk=self.customer.pk).exists())
 
-    def test_authenticated_user_can_delete_customer(self):
+    def test_operative_cannot_delete_customer(self):
         self.admin.is_superuser = False
         self.admin.is_staff = False
         self.admin.save(update_fields=["is_superuser", "is_staff"])
@@ -159,8 +161,8 @@ class CustomerDeleteViewTests(TestCase):
             reverse("customer_delete", kwargs={"pk": self.customer.pk})
         )
 
-        self.assertRedirects(response, reverse("customer_list"))
-        self.assertFalse(Customer.objects.filter(pk=self.customer.pk).exists())
+        self.assertRedirects(response, reverse("dashboard"))
+        self.assertTrue(Customer.objects.filter(pk=self.customer.pk).exists())
 
 
 class VendorListViewTests(TestCase):
@@ -169,6 +171,8 @@ class VendorListViewTests(TestCase):
             username="vendor-list-user",
             password="test-password",
         )
+        self.user.profile.role = "EX"
+        self.user.profile.save(update_fields=["role"])
         self.client.force_login(self.user)
         for name in ("Zulu Supplies", "Alpha Supplies", "Beta Supplies"):
             Vendor.objects.create(name=name)

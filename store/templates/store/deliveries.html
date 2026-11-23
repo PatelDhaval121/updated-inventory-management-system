@@ -27,13 +27,29 @@
     </style>
 
     <div class="d-flex justify-content-between mb-3">
+        {% if user.is_staff or user.is_superuser or user.profile.role == "AD" or user.profile.role == "EX" %}
         <a class="btn btn-success btn-sm" href="{% url 'delivery-create' %}">
             Add Delivery
         </a>
+        {% endif %}
+        {% if user.is_staff or user.is_superuser or user.profile.role == "AD" or user.profile.role == "EX" %}
         <a class="btn btn-success btn-sm" href="{% querystring '_export'='xlsx' %}">
             <i class="fa-solid fa-download"></i> Export to Excel
         </a>
+        {% endif %}
     </div>
+    <form method="get" class="row g-2 mb-3" role="search">
+        <div class="col">
+            <input type="search" name="q" value="{{ request.GET.q }}" class="form-control"
+                placeholder="Search packages by ID, item, customer, or address" aria-label="Search packages">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-success">Search</button>
+            {% if request.GET.q %}
+            <a class="btn btn-outline-secondary" href="{% url 'deliveries' %}">Clear</a>
+            {% endif %}
+        </div>
+    </form>
 
     <div class="mb-4">
         <table class="table table-bordered table-striped table-hover table-sm">
@@ -68,6 +84,7 @@
                         {% endif %}
                     </td>
                     <td>
+                        {% if user.is_staff or user.is_superuser or user.profile.role == "AD" or user.profile.role == "EX" %}
                         <a class="btn btn-outline-info btn-sm" href="{% url 'delivery-update' delivery.pk %}">
                             <i class="fa-solid fa-pen"></i> Edit
                         </a>
@@ -77,11 +94,20 @@
                             <i class="fa-solid fa-check"></i> Mark Delivered
                         </a>
                         {% endif %}
+                        {% if user.is_superuser %}
                         <a class="btn btn-outline-danger btn-sm float-end"
                             href="{% url 'delivery-delete' delivery.pk %}">
                             <i class="fa-solid fa-trash"></i> Delete
                         </a>
+                        {% endif %}
+                        {% else %}
+                        <span class="text-muted">View only</span>
+                        {% endif %}
                     </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-4">No packages found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -94,7 +120,7 @@
             <!-- Previous -->
             {% if page_obj.has_previous %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                <a class="page-link" href="?q={{ request.GET.q|urlencode }}&amp;page={{ page_obj.previous_page_number }}">
                     <i class="fa-solid fa-angle-left"></i> Previous
                 </a>
             </li>
@@ -112,14 +138,14 @@
                 <span class="page-link">{{ i }}</span>
             </li>
             {% elif i >= page_obj.number|add:'-2' and i <= page_obj.number|add:'2' %} <li class="page-item">
-                <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                <a class="page-link" href="?q={{ request.GET.q|urlencode }}&amp;page={{ i }}">{{ i }}</a>
                 </li>
                 {% endif %} {% endfor %}
 
                 <!-- Next -->
                 {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                    <a class="page-link" href="?q={{ request.GET.q|urlencode }}&amp;page={{ page_obj.next_page_number }}">
                         Next <i class="fa-solid fa-angle-right"></i>
                     </a>
                 </li>

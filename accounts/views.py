@@ -9,7 +9,11 @@ from django.views.decorators.http import require_POST
 # Authentication and permissions
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from InventoryMS.permissions import StaffDeletionPermissionMixin
+from InventoryMS.permissions import (
+    StaffDeletionPermissionMixin,
+    StaffManagementPermissionMixin,
+    StaffExportPermissionMixin,
+)
 
 # Class-based views
 from django.views.generic import (
@@ -91,7 +95,13 @@ def profile_update(request):
     )
 
 
-class ProfileListView(LoginRequiredMixin, ExportMixin, SingleTableView):
+class ProfileListView(
+    LoginRequiredMixin,
+    StaffExportPermissionMixin,
+    StaffManagementPermissionMixin,
+    ExportMixin,
+    SingleTableView,
+):
     """
     Display a list of profiles in a table format.
     Requires user to be logged in
@@ -114,10 +124,12 @@ class ProfileListView(LoginRequiredMixin, ExportMixin, SingleTableView):
         return f"Staff_{timestamp}.{export_format}"
 
 
-class ProfileCreateView(LoginRequiredMixin, CreateView):
+class ProfileCreateView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, CreateView
+):
     """
     Create a new profile.
-    Requires user to be logged in and have superuser status.
+    Requires management access.
     Redirects to the profile list upon successful creation.
     """
     model = Profile
@@ -129,13 +141,6 @@ class ProfileCreateView(LoginRequiredMixin, CreateView):
         Return the URL to redirect to after successfully creating a profile.
         """
         return reverse('profile_list')
-
-    def test_func(self):
-        """
-        Check if the user is a superuser.
-        """
-        return self.request.user.is_superuser
-
 
 class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     """
@@ -182,7 +187,9 @@ class ProfileDeleteView(LoginRequiredMixin, StaffDeletionPermissionMixin, Delete
         return self.request.user.is_superuser
 
 
-class CustomerListView(LoginRequiredMixin, ListView):
+class CustomerListView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, ListView
+):
     """
     View for listing all customers.
 
@@ -198,11 +205,13 @@ class CustomerListView(LoginRequiredMixin, ListView):
         return super().get_queryset().order_by('id')
 
 
-class CustomerCreateView(LoginRequiredMixin, CreateView):
+class CustomerCreateView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, CreateView
+):
     """
     View for creating a new customer.
 
-    Requires the user to be logged in.
+    Requires management access.
     Provides a form for creating a new Customer object.
     On successful form submission, redirects to the customer list.
     """
@@ -212,11 +221,13 @@ class CustomerCreateView(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy('customer_list')
 
 
-class CustomerUpdateView(LoginRequiredMixin, UpdateView):
+class CustomerUpdateView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, UpdateView
+):
     """
     View for updating an existing customer.
 
-    Requires the user to be logged in.
+    Requires management access.
     Provides a form for editing an existing Customer object.
     On successful form submission, redirects to the customer list.
     """
@@ -226,7 +237,9 @@ class CustomerUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('customer_list')
 
 
-class CustomerDeleteView(LoginRequiredMixin, DeleteView):
+class CustomerDeleteView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, DeleteView
+):
     """
     View for deleting a customer.
 
@@ -257,7 +270,9 @@ def get_customers(request):
     return JsonResponse({'error': 'Invalid request method'}, status=400)
 
 
-class VendorListView(LoginRequiredMixin, ListView):
+class VendorListView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, ListView
+):
     model = Vendor
     template_name = 'accounts/vendor_list.html'
     context_object_name = 'vendors'
@@ -268,14 +283,18 @@ class VendorListView(LoginRequiredMixin, ListView):
         return super().get_queryset().order_by('name', 'id')
 
 
-class VendorCreateView(LoginRequiredMixin, CreateView):
+class VendorCreateView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, CreateView
+):
     model = Vendor
     form_class = VendorForm
     template_name = 'accounts/vendor_form.html'
     success_url = reverse_lazy('vendor-list')
 
 
-class VendorUpdateView(LoginRequiredMixin, UpdateView):
+class VendorUpdateView(
+    LoginRequiredMixin, StaffManagementPermissionMixin, UpdateView
+):
     model = Vendor
     form_class = VendorForm
     template_name = 'accounts/vendor_form.html'

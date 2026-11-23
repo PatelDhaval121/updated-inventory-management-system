@@ -312,7 +312,10 @@ detail{% endblock %} {% block content %}
   }
 </style>
 <div>
-  <div class="text-center py-3">
+  <div class="d-flex justify-content-center gap-2 py-3">
+    <a href="{% url 'saleslist' %}" class="btn btn-outline-success btn-sm">
+      <i class="fa-solid fa-arrow-left"></i> Back to Sales Orders
+    </a>
     <a href="#" class="btn btn-outline-success btn-sm" id="print-sale-btn">
       <i class="fa fa-print"></i> Print
     </a>

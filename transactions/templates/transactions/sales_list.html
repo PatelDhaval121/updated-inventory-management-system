@@ -20,17 +20,17 @@
 
             <div class="col-md-6 d-flex justify-content-end gap-2">
 
-                <!-- Add Sale -->
+                {% if user.is_staff or user.is_superuser or user.profile.role == "AD" or user.profile.role == "EX" %}
                 <a class="btn btn-success btn-sm rounded-pill shadow-sm" href="{% url 'sale-create' %}">
                     <i class="fa-solid fa-plus"></i>
                     Add Sale Order
                 </a>
 
-                <!-- Export Sales -->
                 <a class="btn btn-primary btn-sm rounded-pill shadow-sm" href="{% url 'sales-export' %}">
                     <i class="fa-solid fa-download"></i>
                     Export to Excel
                 </a>
+                {% endif %}
 
             </div>
 
@@ -43,6 +43,18 @@
      SALES TABLE
 ========================= -->
 <div class="container px-3">
+    <form method="get" class="row g-2 mb-3" role="search">
+        <div class="col">
+            <input type="search" name="q" value="{{ request.GET.q }}" class="form-control"
+                placeholder="Search sales by order ID or customer" aria-label="Search sales">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-success">Search</button>
+            {% if request.GET.q %}
+            <a class="btn btn-outline-secondary" href="{% url 'saleslist' %}">Clear</a>
+            {% endif %}
+        </div>
+    </form>
 
     <style>
         .table th,
@@ -181,7 +193,7 @@
             <!-- Previous -->
             {% if page_obj.has_previous %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                <a class="page-link" href="?q={{ request.GET.q|urlencode }}&amp;page={{ page_obj.previous_page_number }}">
                     <i class="fa-solid fa-angle-left"></i> Previous
                 </a>
             </li>
@@ -199,14 +211,14 @@
                 <span class="page-link">{{ i }}</span>
             </li>
             {% elif i >= page_obj.number|add:'-2' and i <= page_obj.number|add:'2' %} <li class="page-item">
-                <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                <a class="page-link" href="?q={{ request.GET.q|urlencode }}&amp;page={{ i }}">{{ i }}</a>
                 </li>
                 {% endif %} {% endfor %}
 
                 <!-- Next -->
                 {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                    <a class="page-link" href="?q={{ request.GET.q|urlencode }}&amp;page={{ page_obj.next_page_number }}">
                         Next <i class="fa-solid fa-angle-right"></i>
                     </a>
                 </li>

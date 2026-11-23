@@ -128,6 +128,7 @@
           <i class="fa fa-tachometer-alt fa-fw me-2"></i> Dashboard
         </a>
       </li>
+      {% if request.user.is_staff or request.user.is_superuser or request.user.profile.role == 'AD' or request.user.profile.role == 'EX' %}
       <li class="nav-item mb-2 dropdown">
         <a
           class="nav-link text-light {% if request.resolver_match.url_name == 'productslist' %}active{% endif %} dropdown-toggle"
@@ -157,6 +158,7 @@
           </li>
         </ul>
       </li>
+      {% endif %}
       <li class="nav-item mb-2">
         <a
           class="nav-link text-light {% if request.resolver_match.url_name == 'saleslist' %}active{% endif %}"
@@ -197,6 +199,7 @@
           <i class="fa-solid fa-file-invoice me-2"></i> Bills
         </a>
       </li>
+      {% if request.user.is_staff or request.user.is_superuser or request.user.profile.role == 'AD' or request.user.profile.role == 'EX' %}
       <li class="nav-item mb-2 dropdown">
         <a
           class="nav-link text-light {% if request.resolver_match.url_name == 'profile_list' or request.resolver_match.url_name == 'customer_list' or request.resolver_match.url_name == 'vendor-list' %} active{% endif %} dropdown-toggle"
@@ -235,6 +238,7 @@
           </li>
         </ul>
       </li>
+      {% endif %}
     </ul>
   </div>
 

@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from django_extensions.db.fields import AutoSlugField
 
 from store.models import Item
@@ -122,6 +123,13 @@ class Purchase(models.Model):
     description = models.TextField(max_length=300, blank=True, null=True)
     vendor = models.ForeignKey(
         Vendor, related_name="purchases", on_delete=models.CASCADE
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="purchase_orders",
     )
     order_date = models.DateTimeField(auto_now_add=True)
     delivery_date = models.DateTimeField(

@@ -13,15 +13,29 @@ django_tables2 %}{% block title %}Purchases{%endblock title%}
                 <a class="btn btn-success btn-sm rounded-pill shadow-sm" href="{% url 'purchase-create' %}">
                     <i class="fa-solid fa-plus"></i> Add Purchase Order
                 </a>
+                {% if user.is_staff or user.is_superuser or user.profile.role == "AD" or user.profile.role == "EX" %}
                 <a class="btn btn-success btn-sm rounded-pill shadow-sm" href="{% url 'purchases-export' %}">
                     <i class="fa-solid fa-download"></i> Export to Excel
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
 <div class="container">
+    <form method="get" class="row g-2 mb-3" role="search">
+        <div class="col">
+            <input type="search" name="q" value="{{ request.GET.q }}" class="form-control"
+                placeholder="Search purchases by order ID, item, or vendor" aria-label="Search purchases">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-success">Search</button>
+            {% if request.GET.q %}
+            <a class="btn btn-outline-secondary" href="{% url 'purchaseslist' %}">Clear</a>
+            {% endif %}
+        </div>
+    </form>
     <style>
         .table th,
         .table td {
@@ -62,13 +76,24 @@ django_tables2 %}{% block title %}Purchases{%endblock title%}
                 <td>{{ purchase.delivery_date }}</td>
                 <td>{{ purchase.vendor.name }}</td>
                 <td>
-                    <a class="text-info" href="{% url 'purchase-update' purchase.id %}">
-                        <i class="fa-solid fa-pen"></i>
+                    <a class="btn btn-outline-info btn-sm" href="{% url 'purchase-detail' purchase.slug %}" aria-label="View purchase">
+                        <i class="fa-solid fa-eye"></i> View
                     </a>
-                    <a class="text-danger float-end" href="{% url 'purchase-delete' purchase.id %}">
-                        <i class="fa-solid fa-trash"></i>
+                    {% if user.is_staff or user.is_superuser or user.profile.role == "AD" or purchase.created_by_id == user.id or user.profile.role == "EX" and purchase.created_by_id %}
+                    <a class="btn btn-outline-primary btn-sm" href="{% url 'purchase-update' purchase.id %}" aria-label="Edit purchase">
+                        <i class="fa-solid fa-pen"></i> Edit
                     </a>
+                    {% endif %}
+                    {% if user.is_superuser or user.is_staff or user.profile.role == "AD" or purchase.created_by_id == user.id %}
+                    <a class="btn btn-outline-danger btn-sm" href="{% url 'purchase-delete' purchase.id %}" aria-label="Delete purchase">
+                        <i class="fa-solid fa-trash"></i> Delete
+                    </a>
+                    {% endif %}
                 </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center py-4">No purchases found.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -80,7 +105,7 @@ django_tables2 %}{% block title %}Purchases{%endblock title%}
                 <!-- Previous -->
                 {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                    <a class="page-link" href="?q={{ request.GET.q|urlencode }}&amp;page={{ page_obj.previous_page_number }}">
                         <i class="fa-solid fa-angle-left"></i> Previous
                     </a>
                 </li>
@@ -98,14 +123,14 @@ django_tables2 %}{% block title %}Purchases{%endblock title%}
                     <span class="page-link">{{ i }}</span>
                 </li>
                 {% elif i >= page_obj.number|add:'-2' and i <= page_obj.number|add:'2' %} <li class="page-item">
-                    <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                    <a class="page-link" href="?q={{ request.GET.q|urlencode }}&amp;page={{ i }}">{{ i }}</a>
                     </li>
                     {% endif %} {% endfor %}
 
                     <!-- Next -->
                     {% if page_obj.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                        <a class="page-link" href="?q={{ request.GET.q|urlencode }}&amp;page={{ page_obj.next_page_number }}">
                             Next <i class="fa-solid fa-angle-right"></i>
                         </a>
                     </li>
